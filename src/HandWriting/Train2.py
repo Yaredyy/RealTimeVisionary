@@ -6,17 +6,21 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropou
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tqdm import tqdm
 
 # Load dataset function
 def load_data(data_dir):
     X = []
     y = []
     
+    print("Loading dataset...")
     for label in range(10):  # Assuming digits 0-9
         label_dir = os.path.join(data_dir, str(label))
         label_dir = os.path.join(label_dir, str(label))
-        for filename in os.listdir(label_dir):
+        
+        print(f"Processing images for label: {label}")
+        for filename in tqdm(os.listdir(label_dir)):  # Show progress
             img_path = os.path.join(label_dir, filename)
             img = plt.imread(img_path)
 
@@ -28,6 +32,7 @@ def load_data(data_dir):
             X.append(img)
             y.append(label)
 
+    print("Dataset loaded successfully.")
     return np.array(X), np.array(y)
 
 # Define paths
@@ -39,13 +44,9 @@ X = np.array(X)
 X = np.expand_dims(X, axis=-1)  # Add channel dimension for grayscale images
 y_categorical = to_categorical(y, num_classes=10)
 
-# Data augmentation
+# Refined data augmentation to avoid harmful transformations
 datagen = ImageDataGenerator(
-    rotation_range=5,  # Reduce augmentation initially
-    width_shift_range=0.05,
-    height_shift_range=0.05,
-    zoom_range=0.05,
-    validation_split=0.2  # Use built-in validation split
+    validation_split=0.2  # Only use validation split, no augmentation
 )
 
 # Model definition
@@ -62,14 +63,18 @@ model = Sequential([
     Dense(10, activation='softmax')
 ])
 
-# Compile model
-model.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])  # Reduce learning rate
+# Compile model with reduced learning rate for stability
+model.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Fit model
+# Callbacks for early stopping and model checkpointing
+checkpoint = ModelCheckpoint('best_model.keras', save_best_only=True, monitor='val_loss', mode='min')
+early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+
+# Fit model with validation data and visual feedback
 model.fit(datagen.flow(X, y_categorical, batch_size=32, subset='training'),
-          epochs=20,  # Increase epochs
+          epochs=20,
           validation_data=datagen.flow(X, y_categorical, batch_size=32, subset='validation'),
-          callbacks=[EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)])
+          callbacks=[checkpoint, early_stop])
 
-# Save model
-model.save('FINE_handwritten_digit_model.h5')
+# Save final model
+model.save('final_handwritten_digit_model.keras')
