@@ -9,6 +9,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tqdm import tqdm
 from tensorflow.keras.preprocessing.image import img_to_array, array_to_img
+from PIL import Image
 
 # Load dataset function
 def load_data(data_dir):
@@ -23,18 +24,10 @@ def load_data(data_dir):
         print(f"Processing images for label: {label}")
         for filename in tqdm(os.listdir(label_dir)):  # Show progress
             img_path = os.path.join(label_dir, filename)
-            img = plt.imread(img_path)
-
-            # Convert image to grayscale if it's RGBA or RGB
-            if img.ndim == 3:  # Check if it's a color image
-                img = np.mean(img[..., :3], axis=-1)  # Convert to grayscale
-            img = img.astype('float32') / 255.0  # Normalize the image
+            img = Image.open(img_path).convert('L')
+            img = img.resize((28, 28))
             
-            # Resize and add padding (for bounding box effect)
-            img = np.resize(img, (28, 28))  # Ensure correct size
-            
-            # Optional: Flip the image horizontally (if necessary)
-            img = np.fliplr(img)  # Flip image
+            img = np.array(img, dtype='float32') / 255.0  # Normalize the image
             
             X.append(img)
             y.append(label)
@@ -77,14 +70,14 @@ model = Sequential([
 ])
 
 # Compile model with reduced learning rate for stability
-model.compile(optimizer=Adam(learning_rate=0.1), loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Callbacks for early stopping and model checkpointing
 checkpoint = ModelCheckpoint('best_model.keras', save_best_only=True, monitor='val_loss', mode='min')
 early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
 # Fit model with validation data and visual feedback
-history=model.fit(datagen.flow(X, y_categorical, batch_size=256, subset='training'),
+history = model.fit(datagen.flow(X, y_categorical, batch_size=256, subset='training'),
           epochs=40,
           validation_data=datagen.flow(X, y_categorical, batch_size=32, subset='validation'),
           callbacks=[checkpoint, early_stop])
