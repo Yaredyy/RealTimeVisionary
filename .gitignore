@@ -3,3 +3,4 @@
 src/HandWriting/dataset/
 *.keras
 src/.DS_Store
+*.h5
