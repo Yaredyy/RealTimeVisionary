@@ -3,7 +3,8 @@ import numpy as np
 from tensorflow.keras.models import load_model
 
 # Load the pre-trained model
-model = load_model('final_handwritten_digit_model.keras')
+# TODO change filename/filepath
+model = load_model('best_model.keras')
 
 # Preprocess the captured image to match the model's input format
 def preprocess_image(img):

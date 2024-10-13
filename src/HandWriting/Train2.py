@@ -8,6 +8,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tqdm import tqdm
+from tensorflow.keras.preprocessing.image import img_to_array, array_to_img
 
 # Load dataset function
 def load_data(data_dir):
@@ -28,7 +29,13 @@ def load_data(data_dir):
             if img.ndim == 3:  # Check if it's a color image
                 img = np.mean(img[..., :3], axis=-1)  # Convert to grayscale
             img = img.astype('float32') / 255.0  # Normalize the image
+            
+            # Resize and add padding (for bounding box effect)
             img = np.resize(img, (28, 28))  # Ensure correct size
+            
+            # Optional: Flip the image horizontally (if necessary)
+            img = np.fliplr(img)  # Flip image
+            
             X.append(img)
             y.append(label)
 
@@ -45,36 +52,48 @@ X = np.expand_dims(X, axis=-1)  # Add channel dimension for grayscale images
 y_categorical = to_categorical(y, num_classes=10)
 
 # Refined data augmentation to avoid harmful transformations
-datagen = ImageDataGenerator(
-    validation_split=0.2  # Only use validation split, no augmentation
+datagen = ImageDataGenerator(validation_split=0.2,
+    rotation_range=10,  # Rotate images slightly
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    zoom_range=0.1,  # Add zoom
+    horizontal_flip=True,  # Randomly flip images horizontally
 )
 
 # Model definition
 model = Sequential([
-    Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    Conv2D(64, (3, 3), activation='relu', input_shape=(28, 28, 1)),
     MaxPooling2D((2, 2)),
-    Dropout(0.25),
-    Conv2D(64, (3, 3), activation='relu'),
+    Dropout(.25),
+    Conv2D(128, (3, 3), activation='relu'),
     MaxPooling2D((2, 2)),
-    Dropout(0.25),
+    Dropout(.25),
+    Conv2D(256, (3, 3), activation='relu'),  # Add more filters here
+    MaxPooling2D((2, 2)),
+    Dropout(.25),
     Flatten(),
-    Dense(128, activation='relu'),
-    Dropout(0.5),
+    Dense(256, activation='relu'),  # Increase the Dense layer too
     Dense(10, activation='softmax')
 ])
 
 # Compile model with reduced learning rate for stability
-model.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=Adam(learning_rate=0.1), loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Callbacks for early stopping and model checkpointing
 checkpoint = ModelCheckpoint('best_model.keras', save_best_only=True, monitor='val_loss', mode='min')
 early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
 # Fit model with validation data and visual feedback
-model.fit(datagen.flow(X, y_categorical, batch_size=32, subset='training'),
-          epochs=20,
+history=model.fit(datagen.flow(X, y_categorical, batch_size=256, subset='training'),
+          epochs=40,
           validation_data=datagen.flow(X, y_categorical, batch_size=32, subset='validation'),
           callbacks=[checkpoint, early_stop])
 
 # Save final model
 model.save('final_handwritten_digit_model.keras')
+
+# Plotting accuracy
+plt.plot(history.history['accuracy'], label='train accuracy')
+plt.plot(history.history['val_accuracy'], label='validation accuracy')
+plt.legend()
+plt.show()
