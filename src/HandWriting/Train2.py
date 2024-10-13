@@ -4,14 +4,11 @@ import matplotlib.pyplot as plt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tqdm import tqdm
-from tensorflow.keras.preprocessing.image import img_to_array, array_to_img
+from tensorflow.keras.callbacks import EarlyStopping, LearningRateScheduler
 from PIL import Image
+from tqdm import tqdm
 
-# Load dataset function
+# Load dataset function (same as yours)
 def load_data(data_dir):
     X = []
     y = []
@@ -39,54 +36,61 @@ def load_data(data_dir):
 data_dir = '/Users/yaredyohannes/Documents/GitHub/RealTimeVisionary/src/HandWriting/dataset'  # Update this to your dataset path
 X, y = load_data(data_dir)
 
-# Normalize images
+# Reshape data
 X = np.array(X)
 X = np.expand_dims(X, axis=-1)  # Add channel dimension for grayscale images
 y_categorical = to_categorical(y, num_classes=10)
 
-# Refined data augmentation to avoid harmful transformations
-datagen = ImageDataGenerator(validation_split=0.2,
-    rotation_range=10,  # Rotate images slightly
-    width_shift_range=0.1,
-    height_shift_range=0.1,
-    zoom_range=0.1,  # Add zoom
-    horizontal_flip=True,  # Randomly flip images horizontally
-)
-
-# Model definition
+# Model definition (matching theirs)
 model = Sequential([
-    Conv2D(64, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    Conv2D(64, (3, 3), activation='relu'),
     MaxPooling2D((2, 2)),
-    Dropout(.25),
     Conv2D(128, (3, 3), activation='relu'),
+    Conv2D(256, (3, 3), activation='relu'),
     MaxPooling2D((2, 2)),
-    Dropout(.25),
-    Conv2D(256, (3, 3), activation='relu'),  # Add more filters here
-    MaxPooling2D((2, 2)),
-    Dropout(.25),
+    Dropout(0.25),
     Flatten(),
-    Dense(256, activation='relu'),  # Increase the Dense layer too
+    Dense(256, activation='relu'),
+    Dropout(0.5),
     Dense(10, activation='softmax')
 ])
 
-# Compile model with reduced learning rate for stability
-model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+# Compile model (same as theirs)
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Callbacks for early stopping and model checkpointing
-checkpoint = ModelCheckpoint('best_model.keras', save_best_only=True, monitor='val_loss', mode='min')
-early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+# Learning rate scheduling
+def lr_schedule(epoch):
+    initial_lr = 0.0001
+    decay = 0.95
+    return initial_lr * (decay ** epoch)
 
-# Fit model with validation data and visual feedback
-history = model.fit(datagen.flow(X, y_categorical, batch_size=256, subset='training'),
-          epochs=40,
-          validation_data=datagen.flow(X, y_categorical, batch_size=32, subset='validation'),
-          callbacks=[checkpoint, early_stop])
+lr_scheduler = LearningRateScheduler(lr_schedule)
+
+# Early stopping callback
+early_stopping = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+
+# Train model (matching their batch size and epochs)
+history = model.fit(
+    X, 
+    y_categorical,
+    batch_size=32,  # Smaller batch size, like theirs
+    epochs=20,
+    validation_split=0.2,  # 20% of the data used for validation
+    callbacks=[early_stopping, lr_scheduler]
+)
 
 # Save final model
 model.save('final_handwritten_digit_model.keras')
 
-# Plotting accuracy
+# Plotting accuracy (same as theirs)
 plt.plot(history.history['accuracy'], label='train accuracy')
 plt.plot(history.history['val_accuracy'], label='validation accuracy')
+plt.legend()
+plt.show()
+
+# Plotting loss (same as theirs)
+plt.plot(history.history['loss'], label='train loss')
+plt.plot(history.history['val_loss'], label='validation loss')
 plt.legend()
 plt.show()
