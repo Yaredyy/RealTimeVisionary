@@ -2,3 +2,4 @@
 .DS_Store
 src/HandWriting/dataset/
 *.keras
+src/.DS_Store
