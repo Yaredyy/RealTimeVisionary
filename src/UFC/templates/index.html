@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFC Fight Prediction</title>
+</head>
+
+<body>
+    <h1>UFC Fight Outcome Prediction</h1>
+    <form method="post">
+        <label for="RedWinsByDecisionMajority">Red Wins by Decision Majority:</label>
+        <input type="number" name="RedWinsByDecisionMajority" required><br>
+
+        <label for="RedWinsByTKODoctorStoppage">Red Wins by TKO/Doctor Stoppage:</label>
+        <input type="number" name="RedWinsByTKODoctorStoppage" required><br>
+
+        <label for="WinDif">Win Difference:</label>
+        <input type="text" name="WinDif" required><br>
+
+        <label for="KODif">KO Difference:</label>
+        <input type="text" name="KODif" required><br>
+
+        <label for="RedTotalRoundsFought">Red Total Rounds Fought:</label>
+        <input type="number" name="RedTotalRoundsFought" required><br>
+
+        <label for="RedWins">Red Wins:</label>
+        <input type="number" name="RedWins" required><br>
+
+        <label for="RWelterweightRank">Red Welterweight Rank:</label>
+        <input type="number" name="RWelterweightRank" required><br>
+
+        <label for="RedAvgTDPct">Red Average Takedown Percentage:</label>
+        <input type="text" name="RedAvgTDPct" required><br>
+
+        <label for="BSubOdds">Blue Submission Odds:</label>
+        <input type="text" name="BSubOdds" required><br>
+
+        <label for="BlueWinsByKO">Blue Wins by KO:</label>
+        <input type="number" name="BlueWinsByKO" required><br>
+
+        <label for="BlueWinsByDecisionMajority">Blue Wins by Decision Majority:</label>
+        <input type="number" name="BlueWinsByDecisionMajority" required><br>
+
+        <label for="BlueWins">Blue Wins:</label>
+        <input type="number" name="BlueWins" required><br>
+
+        <label for="BlueLosses">Blue Losses:</label>
+        <input type="number" name="BlueLosses" required><br>
+
+        <label for="RedAge">Red Age:</label>
+        <input type="number" name="RedAge" required><br>
+
+        <label for="BlueAge">Blue Age:</label>
+        <input type="number" name="BlueAge" required><br>
+
+        <label for="NumberOfRounds">Number of Rounds:</label>
+        <input type="number" name="NumberOfRounds" required><br>
+
+        <input type="submit" value="Predict">
+    </form>
+
+    {% if prediction is not none %}
+    <h2>Prediction: {{ prediction }}</h2>
+    {% endif %}
+</body>
+
+</html>
